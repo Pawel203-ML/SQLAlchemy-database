@@ -58,4 +58,26 @@ with engine.connect() as connection:
                 print(f' Wystapil blad przy dopisywaniu: {e}')
                 transaction.rollback()
 
+    with open(csv_files[1], newline='', encoding='utf-8') as file:
+        csv_reader = csv.DictReader(file)
+        data = []
 
+        for row in csv_reader:
+            data.append({
+                    'station' : row['station'],
+                    'latitude' : float(row['latitude']) if row['latitude'] else None,
+                    'longitude' : float(row['longitude']) if row['longitude'] else None,
+                    'elevation' : float(row['elevation']) if row['elevation'] else None,
+                    'name' : row['name'] if row['name'] else None,
+                    'country' : row['country'] if row['country'] else None,
+                    'state' : row['state'] if row['state'] else None
+            })
+        with connection.begin() as transaction:
+            try:
+                connection.execute(insert(stations).prefix_with('OR IGNORE'), data)
+            except Exception as e:
+                print(f'Wystapil blad przy dopisywaniu: {e}')
+                transaction.rollback()
+
+    line = connection.execute("SELECT * FROM stations LIMIT 5").fetchall()
+    print(*line)
